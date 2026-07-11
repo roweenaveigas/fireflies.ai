@@ -33,11 +33,11 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
         <ThemeProvider>
-          <AuthProvider>
-            <ProfileProvider>
+          <ProfileProvider>
+            <AuthProvider>
               <ToastProvider>{children}</ToastProvider>
-            </ProfileProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </ProfileProvider>
         </ThemeProvider>
       </body>
     </html>

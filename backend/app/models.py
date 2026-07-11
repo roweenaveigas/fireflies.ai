@@ -20,6 +20,41 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.session import Base
 
 
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True, index=True)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    meetings: Mapped[list[Meeting]] = relationship(
+        "Meeting",
+        back_populates="owner",
+        cascade="all, delete-orphan",
+    )
+    sessions: Mapped[list[AuthSession]] = relationship(
+        "AuthSession",
+        back_populates="user",
+        cascade="all, delete-orphan",
+    )
+
+
+class AuthSession(Base):
+    __tablename__ = "auth_sessions"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    token: Mapped[str] = mapped_column(String(128), nullable=False, unique=True, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    user: Mapped[User] = relationship("User", back_populates="sessions")
+
+
 # --- Association tables ---
 
 meeting_participants = Table(
@@ -49,11 +84,15 @@ class Meeting(Base):
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     date: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
     duration_minutes: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    owner_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
+    owner: Mapped[Optional[User]] = relationship("User", back_populates="meetings")
     participants: Mapped[list[Participant]] = relationship(
         "Participant",
         secondary=meeting_participants,

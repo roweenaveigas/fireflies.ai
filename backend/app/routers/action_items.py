@@ -6,7 +6,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.models import ActionItem, Meeting
+from app.models import ActionItem, Meeting, User
+from app.routers.auth import get_current_user
 from app.schemas import ActionItemCreate, ActionItemRead, ActionItemUpdate, MessageResponse
 
 router = APIRouter(prefix="/meetings", tags=["action-items"])
@@ -16,14 +17,21 @@ def _utcnow() -> datetime:
     return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
-def _get_meeting(db: Session, meeting_id: int) -> Meeting:
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+def _get_meeting(db: Session, meeting_id: int, user: User) -> Meeting:
+    meeting = (
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.owner_id == user.id)
+        .first()
+    )
     if not meeting:
         raise HTTPException(status_code=404, detail=f"Meeting {meeting_id} not found")
     return meeting
 
 
-def _get_action_item(db: Session, meeting_id: int, item_id: int) -> ActionItem:
+def _get_action_item(
+    db: Session, meeting_id: int, item_id: int, user: User
+) -> ActionItem:
+    _get_meeting(db, meeting_id, user)
     item = (
         db.query(ActionItem)
         .filter(ActionItem.id == item_id, ActionItem.meeting_id == meeting_id)
@@ -46,8 +54,9 @@ def create_action_item(
     meeting_id: int,
     payload: ActionItemCreate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> ActionItemRead:
-    _get_meeting(db, meeting_id)
+    _get_meeting(db, meeting_id, user)
     item = ActionItem(
         meeting_id=meeting_id,
         text=payload.text.strip(),
@@ -70,8 +79,9 @@ def update_action_item(
     item_id: int,
     payload: ActionItemUpdate,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> ActionItemRead:
-    item = _get_action_item(db, meeting_id, item_id)
+    item = _get_action_item(db, meeting_id, item_id, user)
     if payload.text is not None:
         item.text = payload.text.strip()
     if payload.assignee is not None:
@@ -91,8 +101,9 @@ def delete_action_item(
     meeting_id: int,
     item_id: int,
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> MessageResponse:
-    item = _get_action_item(db, meeting_id, item_id)
+    item = _get_action_item(db, meeting_id, item_id, user)
     db.delete(item)
     db.commit()
     return MessageResponse(message="Action item deleted", id=item_id)

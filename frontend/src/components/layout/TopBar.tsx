@@ -259,9 +259,9 @@ export function TopBar({ onNewMeeting }: TopBarProps) {
                   <button
                     type="button"
                     className="ff-menu-item"
-                    onClick={() => {
+                    onClick={async () => {
                       setMenuOpen(false);
-                      logout();
+                      await logout();
                       router.push("/");
                     }}
                   >

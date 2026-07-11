@@ -4,30 +4,36 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useProfile } from "@/components/profile/ProfileProvider";
 
 export default function SignupPage() {
   const router = useRouter();
   const { signup, isAuthenticated, ready } = useAuth();
-  const { updateProfile } = useProfile();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (ready && isAuthenticated) router.replace("/home");
   }, [ready, isAuthenticated, router]);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim() || !password.trim()) {
-      setError("Fill in name, email, and password.");
+    if (!name.trim() || !email.trim() || password.trim().length < 6) {
+      setError("Fill in name, email, and a password (6+ characters).");
       return;
     }
-    updateProfile({ name: name.trim(), email: email.trim() });
-    signup(name.trim(), email.trim(), password);
-    router.push("/home");
+    setLoading(true);
+    setError("");
+    try {
+      await signup(name.trim(), email.trim(), password);
+      router.push("/home");
+    } catch {
+      setError("Could not create account. Email may already be registered.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -49,7 +55,7 @@ export default function SignupPage() {
 
         <h1 className="mt-6 text-2xl font-semibold text-white">Get started</h1>
         <p className="mt-1 text-sm text-white/60">
-          Create your account and open the meetings workspace.
+          Create your account. New accounts start empty — use the demo login for the full sample library.
         </p>
 
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
@@ -59,7 +65,7 @@ export default function SignupPage() {
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Maya Rivera"
+              placeholder="Your name"
               className="w-full rounded-lg border border-white/15 bg-[#0B0916] px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30 focus:border-[#6C5CE7]"
               autoComplete="name"
             />
@@ -89,9 +95,10 @@ export default function SignupPage() {
           {error ? <p className="text-xs text-red-400">{error}</p> : null}
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#6C5CE7] py-2.5 text-sm font-semibold text-white hover:bg-[#5B4CDB]"
+            disabled={loading}
+            className="w-full rounded-lg bg-[#6C5CE7] py-2.5 text-sm font-semibold text-white hover:bg-[#5B4CDB] disabled:opacity-60"
           >
-            Sign up
+            {loading ? "Creating…" : "Sign up"}
           </button>
         </form>
 

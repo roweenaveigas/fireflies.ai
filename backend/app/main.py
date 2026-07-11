@@ -2,6 +2,7 @@ import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 from sqlalchemy.orm import Session
 
 from app.db.session import SessionLocal, engine, Base
@@ -10,11 +11,28 @@ from app.routers import api_router
 from app.seed import seed
 import app.models  # noqa: F401 — register models before create_all
 
-Base.metadata.create_all(bind=engine)
+
+def _ensure_schema() -> None:
+    """Create tables and add owner_id if upgrading an older SQLite file."""
+    Base.metadata.create_all(bind=engine)
+    insp = inspect(engine)
+    if "meetings" in insp.get_table_names():
+        cols = {c["name"] for c in insp.get_columns("meetings")}
+        if "owner_id" not in cols:
+            with engine.begin() as conn:
+                conn.execute(
+                    text(
+                        "ALTER TABLE meetings ADD COLUMN owner_id INTEGER "
+                        "REFERENCES users(id) ON DELETE CASCADE"
+                    )
+                )
+
+
+_ensure_schema()
 
 
 def _seed_if_empty() -> None:
-    """Load sample meetings when the database has none (e.g. fresh Render deploy)."""
+    """Load demo user + sample meetings when the database has none."""
     db: Session = SessionLocal()
     try:
         if db.query(Meeting).count() == 0:
@@ -69,4 +87,10 @@ def seed_database():
         count = db.query(Meeting).count()
     finally:
         db.close()
-    return {"status": "ok", "meetings": count}
+    return {
+        "status": "ok",
+        "meetings": count,
+        "demo_email": "maya.rivera@acme.io",
+        "demo_password": "Demo@1234",
+        "demo_name": "Maya Rivera",
+    }

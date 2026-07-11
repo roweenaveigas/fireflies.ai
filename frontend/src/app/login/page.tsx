@@ -4,29 +4,36 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { useProfile } from "@/components/profile/ProfileProvider";
+import { DEMO_LOGIN } from "@/lib/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const { login, isAuthenticated, ready } = useAuth();
-  const { updateProfile } = useProfile();
-  const [email, setEmail] = useState("maya.rivera@acme.io");
-  const [password, setPassword] = useState("demo1234");
+  const [email, setEmail] = useState<string>(DEMO_LOGIN.email);
+  const [password, setPassword] = useState<string>(DEMO_LOGIN.password);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (ready && isAuthenticated) router.replace("/home");
   }, [ready, isAuthenticated, router]);
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim()) {
       setError("Enter email and password.");
       return;
     }
-    updateProfile({ email: email.trim() });
-    login(email.trim(), password);
-    router.push("/home");
+    setLoading(true);
+    setError("");
+    try {
+      await login(email.trim(), password);
+      router.push("/home");
+    } catch {
+      setError("Invalid email or password.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -75,9 +82,10 @@ export default function LoginPage() {
           {error ? <p className="text-xs text-red-400">{error}</p> : null}
           <button
             type="submit"
-            className="w-full rounded-lg bg-[#6C5CE7] py-2.5 text-sm font-semibold text-white hover:bg-[#5B4CDB]"
+            disabled={loading}
+            className="w-full rounded-lg bg-[#6C5CE7] py-2.5 text-sm font-semibold text-white hover:bg-[#5B4CDB] disabled:opacity-60"
           >
-            Log in
+            {loading ? "Signing in…" : "Log in"}
           </button>
         </form>
 
@@ -87,9 +95,11 @@ export default function LoginPage() {
             Sign up
           </Link>
         </p>
-        <p className="mt-2 text-center text-[11px] text-white/35">
-          Demo auth — any email/password works.
-        </p>
+        <div className="mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-2.5 text-[11px] text-white/55">
+          <p className="font-semibold text-white/80">Demo account (full meeting library)</p>
+          <p className="mt-1">Email: {DEMO_LOGIN.email}</p>
+          <p>Password: {DEMO_LOGIN.password}</p>
+        </div>
       </div>
     </div>
   );

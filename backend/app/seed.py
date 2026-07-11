@@ -14,8 +14,10 @@ from typing import Iterable, TypeVar
 from sqlalchemy import text
 
 from app.db.session import SessionLocal, engine, Base, DATABASE_URL
+from app.auth_utils import DEMO_EMAIL, DEMO_NAME, DEMO_PASSWORD, ensure_demo_user
 from app.models import (
     ActionItem,
+    AuthSession,
     KeyTopic,
     Meeting,
     Participant,
@@ -23,6 +25,7 @@ from app.models import (
     Summary,
     Tag,
     TranscriptLine,
+    User,
     meeting_participants,
     meeting_tags,
 )
@@ -83,6 +86,8 @@ def clear_db(db) -> None:
     db.query(Summary).delete()
     db.query(Speaker).delete()
     db.query(Meeting).delete()
+    db.query(AuthSession).delete()
+    # Keep non-demo users; meetings wipe is enough for reseed
     db.query(Participant).delete()
     db.query(Tag).delete()
     db.commit()
@@ -93,6 +98,8 @@ def seed() -> None:
     db = SessionLocal()
     try:
         clear_db(db)
+        demo_user = ensure_demo_user(db)
+        db.flush()
 
         # --- Shared people ---
         people = {
@@ -105,6 +112,7 @@ def seed() -> None:
             "lena": Participant(name="Lena Vogt", email="lena@northwind.co"),
             "tom": Participant(name="Tom Harris", email="tom.harris@northwind.co"),
             "nina": Participant(name="Nina Brooks", email="nina.brooks@acme.io"),
+            "demo": Participant(name=DEMO_NAME, email=DEMO_EMAIL),
         }
         for p in people.values():
             db.add(p)
@@ -614,12 +622,18 @@ def seed() -> None:
             ActionItem(meeting_id=m6.id, text="Finalize orange accent tokens in theme", assignee="Priya Nair", is_completed=False),
         ]
 
+        # Attach all sample meetings to the demo login account
+        for m in (m1, m2, m3, m4, m5, m6):
+            m.owner_id = demo_user.id
+            m.participants = _dedupe([people["demo"], *list(m.participants)])
+
         db.commit()
 
         count = db.query(Meeting).count()
         lines = db.query(TranscriptLine).count()
         actions = db.query(ActionItem).count()
         print(f"Seeded {count} meetings, {lines} transcript lines, {actions} action items")
+        print(f"Demo login: {DEMO_EMAIL} / {DEMO_PASSWORD} ({DEMO_NAME})")
         print(f"Database: {DATABASE_URL}")
     finally:
         db.close()

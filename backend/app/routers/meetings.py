@@ -17,7 +17,9 @@ from app.models import (
     Summary,
     Tag,
     TranscriptLine,
+    User,
 )
+from app.routers.auth import get_current_user
 from app.schemas import (
     MeetingCreate,
     MeetingDetail,
@@ -178,8 +180,13 @@ def list_meetings(
     tag: Optional[str] = Query(None, description="Filter by tag name"),
     sort: str = Query("recency", pattern="^(recency|oldest)$"),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> MeetingListResponse:
-    query = db.query(Meeting).options(*meeting_list_options())
+    query = (
+        db.query(Meeting)
+        .options(*meeting_list_options())
+        .filter(Meeting.owner_id == user.id)
+    )
 
     if q and q.strip():
         term = f"%{q.strip()}%"
@@ -216,15 +223,28 @@ def list_meetings(
     return MeetingListResponse(meetings=items, total=len(items))
 
 
-@router.get("/{meeting_id}", response_model=MeetingDetail)
-def get_meeting(meeting_id: int, db: Session = Depends(get_db)) -> MeetingDetail:
+def _owned_meeting_or_404(db: Session, meeting_id: int, user: User) -> Meeting:
     meeting = get_meeting_or_404(db, meeting_id)
+    if meeting.owner_id is not None and meeting.owner_id != user.id:
+        raise HTTPException(status_code=404, detail=f"Meeting {meeting_id} not found")
+    return meeting
+
+
+@router.get("/{meeting_id}", response_model=MeetingDetail)
+def get_meeting(
+    meeting_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> MeetingDetail:
+    meeting = _owned_meeting_or_404(db, meeting_id, user)
     return to_detail(meeting)
 
 
 @router.post("/", response_model=MeetingDetail, status_code=status.HTTP_201_CREATED)
 def create_meeting(
-    payload: MeetingCreate, db: Session = Depends(get_db)
+    payload: MeetingCreate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> MeetingDetail:
     now = _utcnow()
     lines = _build_transcript_inputs(payload)
@@ -240,6 +260,7 @@ def create_meeting(
         title=payload.title.strip(),
         date=payload.date or now,
         duration_minutes=duration,
+        owner_id=user.id,
         created_at=now,
         updated_at=now,
     )
@@ -299,9 +320,12 @@ def create_meeting(
 
 @router.put("/{meeting_id}", response_model=MeetingDetail)
 def update_meeting(
-    meeting_id: int, payload: MeetingUpdate, db: Session = Depends(get_db)
+    meeting_id: int,
+    payload: MeetingUpdate,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> MeetingDetail:
-    meeting = get_meeting_or_404(db, meeting_id)
+    meeting = _owned_meeting_or_404(db, meeting_id, user)
 
     if payload.title is not None:
         meeting.title = payload.title.strip()
@@ -367,9 +391,15 @@ def update_meeting(
 
 @router.delete("/{meeting_id}", response_model=MessageResponse)
 def delete_meeting(
-    meeting_id: int, db: Session = Depends(get_db)
+    meeting_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> MessageResponse:
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    meeting = (
+        db.query(Meeting)
+        .filter(Meeting.id == meeting_id, Meeting.owner_id == user.id)
+        .first()
+    )
     if not meeting:
         raise HTTPException(status_code=404, detail=f"Meeting {meeting_id} not found")
     db.delete(meeting)

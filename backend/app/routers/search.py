@@ -11,7 +11,9 @@ from app.models import (
     Summary,
     Tag,
     TranscriptLine,
+    User,
 )
+from app.routers.auth import get_current_user
 from app.schemas import SearchResponse, SearchSnippet, TagListResponse, TagRead
 
 router = APIRouter(tags=["search"])
@@ -37,6 +39,7 @@ def _snippet(text: str, query: str) -> str:
 def search(
     q: str = Query(..., min_length=1, description="Search meetings, transcripts, people, actions"),
     db: Session = Depends(get_db),
+    user: User = Depends(get_current_user),
 ) -> SearchResponse:
     term = q.strip()
     if not term:
@@ -44,10 +47,11 @@ def search(
 
     like = f"%{term}%"
     results: list[SearchSnippet] = []
+    owned = Meeting.owner_id == user.id
 
     title_hits = (
         db.query(Meeting)
-        .filter(Meeting.title.ilike(like))
+        .filter(owned, Meeting.title.ilike(like))
         .order_by(Meeting.date.desc())
         .all()
     )
@@ -64,7 +68,7 @@ def search(
     participant_hits = (
         db.query(Meeting)
         .join(Meeting.participants)
-        .filter(Participant.name.ilike(like))
+        .filter(owned, Participant.name.ilike(like))
         .order_by(Meeting.date.desc())
         .distinct()
         .all()
@@ -83,7 +87,8 @@ def search(
     summary_hits = (
         db.query(Summary)
         .options(joinedload(Summary.meeting))
-        .filter(Summary.overview_text.ilike(like))
+        .join(Summary.meeting)
+        .filter(owned, Summary.overview_text.ilike(like))
         .limit(40)
         .all()
     )
@@ -100,7 +105,8 @@ def search(
     action_hits = (
         db.query(ActionItem)
         .options(joinedload(ActionItem.meeting))
-        .filter(ActionItem.text.ilike(like))
+        .join(ActionItem.meeting)
+        .filter(owned, ActionItem.text.ilike(like))
         .limit(40)
         .all()
     )
@@ -117,7 +123,7 @@ def search(
     tag_hits = (
         db.query(Meeting)
         .join(Meeting.tags)
-        .filter(Tag.name.ilike(like))
+        .filter(owned, Tag.name.ilike(like))
         .order_by(Meeting.date.desc())
         .distinct()
         .all()
@@ -136,7 +142,8 @@ def search(
     line_hits = (
         db.query(TranscriptLine)
         .options(joinedload(TranscriptLine.meeting))
-        .filter(TranscriptLine.text.ilike(like))
+        .join(TranscriptLine.meeting)
+        .filter(owned, TranscriptLine.text.ilike(like))
         .order_by(TranscriptLine.meeting_id, TranscriptLine.order_index)
         .limit(100)
         .all()

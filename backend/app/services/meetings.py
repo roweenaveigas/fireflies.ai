@@ -45,13 +45,17 @@ def meeting_detail_options():
     )
 
 
-def get_meeting_or_404(db: Session, meeting_id: int) -> Meeting:
-    meeting = (
+def get_meeting_or_404(
+    db: Session, meeting_id: int, owner_id: int | None = None
+) -> Meeting:
+    query = (
         db.query(Meeting)
         .options(*meeting_detail_options())
         .filter(Meeting.id == meeting_id)
-        .first()
     )
+    if owner_id is not None:
+        query = query.filter(Meeting.owner_id == owner_id)
+    meeting = query.first()
     if not meeting:
         raise HTTPException(status_code=404, detail=f"Meeting {meeting_id} not found")
     return meeting
