@@ -7,7 +7,6 @@ import {
   Compass,
   Newspaper,
   Settings2,
-  Sparkles,
   Star,
 } from "lucide-react";
 
