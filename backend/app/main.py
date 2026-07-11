@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -13,12 +15,21 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Local defaults + optional comma-separated FRONTEND_ORIGINS for production (Vercel URL)
+_default_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+_extra = [
+    o.strip()
+    for o in os.getenv("FRONTEND_ORIGINS", "").split(",")
+    if o.strip()
+]
+allow_origins = _default_origins + _extra
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
