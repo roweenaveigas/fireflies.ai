@@ -36,12 +36,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setReady(true);
   }, []);
 
-  const login = useCallback((_email: string, _password: string) => {
+  const login = useCallback((email: string, password: string) => {
+    void email;
+    void password;
     localStorage.setItem(STORAGE_KEY, "1");
     setIsAuthenticated(true);
   }, []);
 
-  const signup = useCallback((_name: string, _email: string, _password: string) => {
+  const signup = useCallback((name: string, email: string, password: string) => {
+    void name;
+    void email;
+    void password;
     localStorage.setItem(STORAGE_KEY, "1");
     setIsAuthenticated(true);
   }, []);

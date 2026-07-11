@@ -34,16 +34,13 @@ import { Modal } from "@/components/ui/Modal";
 import { useToast } from "@/components/ui/ToastProvider";
 import {
   createComment,
-  createHighlight,
   createSoundbite,
-  deleteHighlight,
   deleteSoundbite,
 } from "@/lib/annotations";
 import { avatarColor, formatClock, getInitials } from "@/lib/format";
 import { fetchMeeting } from "@/lib/meetings";
 import type {
   ActionItem,
-  Highlight,
   MeetingDetail,
   Soundbite,
   TranscriptComment,
@@ -67,7 +64,6 @@ export function MeetingDetailView({ meetingId }: { meetingId: number }) {
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
-  const [selectedLineIds, setSelectedLineIds] = useState<Set<number>>(new Set());
   const [commentLineId, setCommentLineId] = useState<number | null>(null);
   const [commentBody, setCommentBody] = useState("");
   const [soundbiteLineId, setSoundbiteLineId] = useState<number | null>(null);
@@ -158,14 +154,6 @@ export function MeetingDetailView({ meetingId }: { meetingId: number }) {
     [highlights]
   );
 
-  const commentCounts = useMemo(() => {
-    const map = new Map<number, number>();
-    for (const c of comments) {
-      map.set(c.transcript_line_id, (map.get(c.transcript_line_id) ?? 0) + 1);
-    }
-    return map;
-  }, [comments]);
-
   const onSeek = (seconds: number, lineId: number) => {
     const start = Number(seconds);
     if (!Number.isFinite(start)) return;
@@ -178,43 +166,12 @@ export function MeetingDetailView({ meetingId }: { meetingId: number }) {
     setMeeting((prev) => (prev ? { ...prev, action_items: items } : prev));
   };
 
-  const setHighlights = (next: Highlight[]) => {
-    setMeeting((prev) => (prev ? { ...prev, highlights: next } : prev));
-  };
-
   const setComments = (next: TranscriptComment[]) => {
     setMeeting((prev) => (prev ? { ...prev, comments: next } : prev));
   };
 
   const setSoundbites = (next: Soundbite[]) => {
     setMeeting((prev) => (prev ? { ...prev, soundbites: next } : prev));
-  };
-
-  const toggleSelect = (lineId: number) => {
-    setSelectedLineIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(lineId)) next.delete(lineId);
-      else next.add(lineId);
-      return next;
-    });
-  };
-
-  const toggleHighlight = async (lineId: number) => {
-    if (!meeting) return;
-    const existing = highlights.find((h) => h.transcript_line_id === lineId);
-    try {
-      if (existing) {
-        await deleteHighlight(meeting.id, existing.id);
-        setHighlights(highlights.filter((h) => h.id !== existing.id));
-        success("Highlight removed.");
-      } else {
-        const created = await createHighlight(meeting.id, lineId);
-        setHighlights([...highlights, created]);
-        success("Line highlighted.");
-      }
-    } catch {
-      toastError("Could not update highlight.");
-    }
   };
 
   const submitComment = async () => {
