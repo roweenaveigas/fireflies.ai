@@ -2,7 +2,7 @@
 
 A full-stack Fireflies.ai-style meeting notes and transcription web app, built as an SDE fullstack assignment. The product focuses on **post-meeting workflows**—browsing a meetings library, reviewing interactive transcripts synced to a media player, and managing AI-style summaries, key topics, and action items—rather than real-time speech-to-text.
 
-**Live repo:** [github.com/roweenaveigas/fireflies.ai](https://github.com/roweenaveigas/fireflies.ai)
+**Live repo:** [github.com/roweenaveigas/fireflies.ai_clone](https://github.com/roweenaveigas/fireflies.ai_clone)
 
 ---
 
