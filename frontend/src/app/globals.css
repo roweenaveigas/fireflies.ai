@@ -1,0 +1,236 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --ff-purple: #6c5ce7;
+  --ff-purple-hover: #5b4cdb;
+  --ff-purple-soft: #f3f0ff;
+  --ff-purple-muted: #ebe7ff;
+  --ff-bg: #ffffff;
+  --ff-canvas: #f7f7fb;
+  --ff-sidebar: #ffffff;
+  --ff-border: #e8e8ef;
+  --ff-border-soft: #f0f0f5;
+  --ff-text: #1f1f2e;
+  --ff-muted: #6b6b80;
+  --ff-muted-2: #9a9aaf;
+  --ff-row-hover: #f7f7fb;
+  --ff-input-bg: #f7f7fb;
+  --ff-highlight: #f3f0ff;
+  --ff-amber: #fffbeb;
+  --background: #ffffff;
+  --foreground: #1f1f2e;
+  --brand: #6c5ce7;
+  --brand-soft: #f3f0ff;
+  --canvas: #f7f7fb;
+}
+
+.dark {
+  --ff-purple: #8b7cf7;
+  --ff-purple-hover: #a99bff;
+  --ff-purple-soft: #2a2548;
+  --ff-purple-muted: #352f5c;
+  --ff-bg: #1a1a24;
+  --ff-canvas: #12121a;
+  --ff-sidebar: #16161f;
+  --ff-border: #2c2c3a;
+  --ff-border-soft: #242433;
+  --ff-text: #f4f4f8;
+  --ff-muted: #c4c4d4;
+  --ff-muted-2: #9a9aaf;
+  --ff-row-hover: #1f1f2c;
+  --ff-input-bg: #1f1f2c;
+  --ff-highlight: #2a2548;
+  --ff-amber: #3a3018;
+  --background: #1a1a24;
+  --foreground: #f4f4f8;
+  --brand: #8b7cf7;
+  --brand-soft: #2a2548;
+  --canvas: #12121a;
+}
+
+body {
+  color: var(--ff-text);
+  background: var(--ff-canvas);
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .ff-card {
+    border-radius: 0.75rem;
+    border: 1px solid var(--ff-border);
+    background: var(--ff-bg);
+    box-shadow: 0 1px 2px rgba(31, 31, 46, 0.04);
+  }
+
+  .dark .ff-card {
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  }
+
+  .ff-card-hover {
+    @apply transition-all duration-200 ease-out;
+  }
+
+  .ff-card-hover:hover {
+    border-color: var(--ff-purple-muted);
+    box-shadow: 0 6px 18px rgba(108, 92, 231, 0.12);
+    transform: translateY(-1px);
+  }
+
+  .ff-btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium text-white transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    background: var(--ff-purple);
+  }
+
+  .ff-btn-primary:hover {
+    background: var(--ff-purple-hover);
+  }
+
+  .ff-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition duration-150 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+    border: 1px solid var(--ff-border);
+    background: var(--ff-bg);
+    color: var(--ff-text);
+  }
+
+  .ff-btn-secondary:hover {
+    border-color: var(--ff-purple-muted);
+    background: var(--ff-purple-soft);
+  }
+
+  .ff-input {
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none transition;
+    border: 1px solid var(--ff-border);
+    background: var(--ff-bg);
+    color: var(--ff-text);
+  }
+
+  .ff-input::placeholder {
+    color: var(--ff-muted-2);
+  }
+
+  .ff-input:focus {
+    border-color: var(--ff-purple);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--ff-purple) 20%, transparent);
+  }
+
+  .ff-section-title {
+    @apply text-[15px] font-semibold tracking-tight;
+    color: var(--ff-text);
+  }
+
+  .ff-row {
+    @apply transition-colors duration-150;
+  }
+
+  .ff-row:hover {
+    background-color: var(--ff-row-hover);
+  }
+
+  .ff-skeleton {
+    @apply animate-pulse rounded-md;
+    background: var(--ff-border-soft);
+  }
+
+  .ff-menu {
+    @apply absolute right-0 z-40 mt-1 min-w-[180px] overflow-hidden rounded-xl py-1;
+    border: 1px solid var(--ff-border);
+    background: var(--ff-bg);
+    box-shadow: 0 8px 24px rgba(31, 31, 46, 0.12);
+    animation: ff-fade-in 120ms ease-out;
+  }
+
+  .ff-menu-item {
+    @apply flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium transition;
+    color: var(--ff-text);
+  }
+
+  .ff-menu-item:hover {
+    background: var(--ff-purple-soft);
+    color: var(--ff-purple);
+  }
+
+  .ff-menu-item-danger {
+    @apply flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] font-medium text-red-500 transition hover:bg-red-50;
+  }
+
+  .dark .ff-menu-item-danger:hover {
+    background: rgba(239, 68, 68, 0.12);
+  }
+
+  .ff-tab {
+    @apply relative whitespace-nowrap px-3 py-2.5 text-[13px] font-medium transition;
+    color: var(--ff-muted);
+  }
+
+  .ff-tab:hover {
+    color: var(--ff-text);
+  }
+
+  .ff-tab-active {
+    color: var(--ff-purple);
+  }
+
+  .ff-tab-active::after {
+    content: "";
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 9999px;
+    background: var(--ff-purple);
+  }
+
+  .ff-surface {
+    background: var(--ff-bg);
+    color: var(--ff-text);
+  }
+
+  .ff-muted {
+    color: var(--ff-muted);
+  }
+}
+
+@keyframes ff-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.seek-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  outline: none;
+}
+
+.seek-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--ff-purple);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+}
+
+.seek-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--ff-purple);
+  border: 2px solid white;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+  cursor: pointer;
+}
